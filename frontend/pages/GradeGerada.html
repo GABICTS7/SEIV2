@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grade Gerada</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <header class="bg-primary text-white p-4 rounded mb-4">
+      <h1 class="m-0">Grade Gerada - Turma 3</h1>
+    </header>
+
+    <div class="text-center mb-4">
+      <button onclick="confirmarGeracao()" class="btn btn-lg btn-success">
+        Gerar Grade Automática
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover" id="tabelaGrade" style="display: none;">
+            <thead class="table-dark">
+              <tr>
+                <th>Dia</th>
+                <th>Horário</th>
+                <th>Turno</th>
+                <th>Disciplina</th>
+                <th>ID do Professor</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    function confirmarGeracao() {
+      const confirmar = confirm("Deseja que a IA gere a grade de horários?");
+      if (confirmar) {
+        // Mostra feedback visual enquanto gera
+        const btn = document.querySelector('.btn-success');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Gerando...';
+        btn.disabled = true;
+        
+        gerarGradeIA().finally(() => {
+          btn.innerHTML = 'Gerar Grade Automática';
+          btn.disabled = false;
+        });
+      }
+    }
+
+    async function gerarGradeIA() {
+      try {
+        // 1. Chama a IA para gerar (simulação)
+        const gerar = await fetch('http://localhost:3000/api/ia/gerar');
+        const respostaGerar = await gerar.json();
+        console.log('Resposta da IA:', respostaGerar);
+
+        // 2. Busca a grade já salva no banco
+        const resposta = await fetch('http://localhost:3000/api/ia/grade');
+        const grade = await resposta.json();
+
+        const tbody = document.querySelector('#tabelaGrade tbody');
+        tbody.innerHTML = '';
+
+        grade.forEach(item => {
+          if (item.turma_id === 3) {
+            const linha = `
+              <tr>
+                <td>${item.dia_semana}</td>
+                <td>${item.horario_aula}</td>
+                <td>${item.turno}</td>
+                <td>${item.disciplina}</td>
+                <td>${item.professor_id}</td>
+              </tr>
+            `;
+            tbody.innerHTML += linha;
+          }
+        });
+
+        // Mostra a tabela com animação
+        const tabela = document.getElementById('tabelaGrade');
+        tabela.style.display = 'table';
+        tabela.classList.add('animate__animated', 'animate__fadeIn');
+        
+      } catch (erro) {
+        // Substitui o alert por um toast do Bootstrap
+        showErrorToast('Erro ao gerar ou carregar a grade.');
+        console.error(erro);
+      }
+    }
+
+    // Função para mostrar mensagem de erro estilo toast
+    function showErrorToast(message) {
+      const toastHTML = `
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+              <strong class="me-auto">Erro</strong>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              ${message}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const toastContainer = document.createElement('div');
+      toastContainer.innerHTML = toastHTML;
+      document.body.appendChild(toastContainer);
+      
+      // Remove o toast após 5 segundos
+      setTimeout(() => {
+        toastContainer.remove();
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

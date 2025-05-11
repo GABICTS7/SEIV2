@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - Gestão Escolar</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), 
+                        url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ7wFvZK8Hb6m0iTZn_ag3fVHaSXESyR_Y_XA&s');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+    .card {
+      background-color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(5px);
+    }
+    .card-header {
+      background-color: rgba(13, 110, 253, 0.9) !important;
+    }
+    .btn-usuario.active {
+      background-color: #0d6efd;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg">
+          <div class="card-header text-white text-center">
+            <h1 class="h4 mb-0">Login | S.E.I</h1>
+          </div>
+          <div class="card-body p-4">
+            <form id="loginForm">
+              <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <input type="email" class="form-control" id="email" required value="admin@escola.com">
+              </div>
+              
+              <div class="mb-4">
+                <label for="senha" class="form-label">Senha:</label>
+                <input type="password" class="form-control" id="senha" required value="admin123">
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+              </div>
+            </form>
+          </div>
+          <div class="card-footer bg-light text-center">
+            <small class="text-muted">Selecione o tipo de usuário:</small>
+            <div class="btn-group btn-group-sm mt-2" role="group">
+              <button type="button" class="btn btn-outline-secondary btn-usuario active" data-tipo="admin">Admin</button>
+              <button type="button" class="btn btn-outline-secondary btn-usuario" data-tipo="professor">Professor</button>
+              <button type="button" class="btn btn-outline-secondary btn-usuario" data-tipo="aluno">Aluno</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let tipoUsuario = 'admin'; // Valor padrão
+
+    // Configura os botões de tipo de usuário
+    document.querySelectorAll('[data-tipo]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        // Remove a classe active de todos os botões
+        document.querySelectorAll('.btn-usuario').forEach(b => {
+          b.classList.remove('active', 'btn-primary');
+          b.classList.add('btn-outline-secondary');
+        });
+        
+        // Adiciona active apenas no botão clicado
+        this.classList.remove('btn-outline-secondary');
+        this.classList.add('active', 'btn-primary');
+        tipoUsuario = this.getAttribute('data-tipo');
+      });
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+      const tipo = tipoUsuario;
+
+      try {
+        // Mostra spinner no botão
+        const btn = e.target.querySelector('button[type="submit"]');
+        const btnOriginal = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Entrando...';
+        btn.disabled = true;
+
+        // Remove alertas anteriores
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          // Feedback visual de sucesso
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success mt-3';
+          alertDiv.textContent = data.message || 'Login realizado com sucesso!';
+          document.querySelector('.card-body').appendChild(alertDiv);
+          
+          // Redireciona conforme a resposta do servidor
+          setTimeout(() => {
+            window.location.href = data.redirect || '/dashboard';
+          }, 1500);
+        } else {
+          // Mostra mensagem de erro
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'alert alert-danger mt-3';
+          errorDiv.textContent = data.message || 'Erro no login. Verifique suas credenciais.';
+          document.querySelector('.card-body').appendChild(errorDiv);
+        }
+      } catch (error) {
+        console.error('Erro no login:', error);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.textContent = 'Erro de conexão com o servidor.';
+        document.querySelector('.card-body').appendChild(errorDiv);
+      } finally {
+        // Restaura o botão
+        const btn = e.target.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.innerHTML = 'Entrar';
+          btn.disabled = false;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
